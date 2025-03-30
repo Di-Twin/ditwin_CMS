@@ -1,5 +1,5 @@
 import express from "express";
-import supabase from "../config/supabaseClient.js";
+import supabase from "../config/supabase.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
 

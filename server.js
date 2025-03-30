@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import supabase from "./config/supabase.js";
 import authRoutes from "./routes/auth.js";
 import contentRoutes from './routes/contentRoutes.js'
-import contentRoutes from './routes/blogRoutes.js'
+import blogRoutes from './routes/blogRoutes.js'
 
 dotenv.config();
 
