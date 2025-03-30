@@ -2,22 +2,26 @@ import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import supabase from "../config/supabase.js";
+import { authMiddleware, adminMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// User Signup
-router.post("/signup", async (req, res) => {
+// ✅ Secured: Only Admin Can Add Users
+router.post("/add-user", authMiddleware, adminMiddleware, async (req, res) => {
   const { email, password, role } = req.body;
 
-  // Ensure valid role
+  if (!email || !password || !role) {
+    return res.status(400).json({ error: "All fields are required!" });
+  }
+
   if (!["admin", "editor", "seo"].includes(role)) {
     return res.status(400).json({ error: "Invalid role!" });
   }
 
-  // Check if user exists
+  // Check if user already exists
   const { data: existingUser } = await supabase
     .from("users")
-    .select("*")
+    .select("id")
     .eq("email", email)
     .single();
 
@@ -28,17 +32,17 @@ router.post("/signup", async (req, res) => {
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  // Insert user into Supabase
+  // Insert user into database
   const { data, error } = await supabase
     .from("users")
     .insert([{ email, password: hashedPassword, role }]);
 
   if (error) return res.status(500).json({ error: error.message });
 
-  res.status(201).json({ message: "User registered successfully!" });
+  res.status(201).json({ message: "User added successfully!" });
 });
 
-// User Login
+// ✅ User Login
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -61,6 +65,28 @@ router.post("/login", async (req, res) => {
   );
 
   res.json({ message: "Login successful!", token, role: user.role });
+});
+
+// Reset Password
+router.post("/reset-password", async (req, res) => {
+  const { email, newPassword } = req.body;
+
+  if (!email || !newPassword) {
+    return res.status(400).json({ error: "Email and new password required!" });
+  }
+
+  // Hash the new password
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  // Update user password in database
+  const { error } = await supabase
+    .from("users")
+    .update({ password: hashedPassword })
+    .eq("email", email);
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json({ message: "Password reset successful!" });
 });
 
 export default router;
