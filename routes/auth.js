@@ -2,9 +2,31 @@ import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import supabase from "../config/supabase.js";
-import { authMiddleware, adminMiddleware } from "../middleware/authMiddleware.js";
+import {
+  authMiddleware,
+  adminMiddleware,
+} from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+// ✅ Get All Users (Admin Only)
+router.get("/users", authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { data: users, error } = await supabase
+      .from("users")
+      .select("id, email, role, created_at");
+
+    if (error) {
+      console.error("Error fetching users:", error);
+      return res.status(500).json({ error: "Failed to retrieve users" });
+    }
+
+    res.json({ message: "Users fetched successfully!", users });
+  } catch (err) {
+    console.error("Unexpected Error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // ✅ Secured: Only Admin Can Add Users
 router.post("/add-user", authMiddleware, adminMiddleware, async (req, res) => {
@@ -46,11 +68,21 @@ router.post("/add-user", authMiddleware, adminMiddleware, async (req, res) => {
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  const { data: user } = await supabase
+  console.log("Login Attempt for:", email);
+
+  const { data: user, error } = await supabase
     .from("users")
     .select("*")
     .eq("email", email)
-    .single();
+    .limit(1)
+    .maybeSingle(); // ✅ prevents multiple row error
+
+  if (error) {
+    console.error("Supabase Error:", error);
+    return res
+      .status(500)
+      .json({ error: "Database query error", details: error.message });
+  }
 
   if (!user) return res.status(400).json({ error: "User not found!" });
 
@@ -87,6 +119,59 @@ router.post("/reset-password", async (req, res) => {
   if (error) return res.status(500).json({ error: error.message });
 
   res.json({ message: "Password reset successful!" });
+});
+
+// ✅ Admin Signup Route (Only for First-Time Setup)
+router.post("/signup-admin", async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required!" });
+  }
+
+  // ✅ Check if an admin already exists
+  const { data: existingAdmin, error: adminCheckError } = await supabase
+    .from("users")
+    .select("id")
+    .eq("role", "admin")
+    .maybeSingle();
+
+  if (adminCheckError) {
+    return res.status(500).json({
+      error: "Database query error",
+      details: adminCheckError.message,
+    });
+  }
+
+  if (existingAdmin) {
+    return res.status(403).json({ error: "Admin already exists!" });
+  }
+
+  // ✅ Hash password
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // ✅ Insert admin into database
+  const { data, error } = await supabase
+    .from("users")
+    .insert([{ email, password: hashedPassword, role: "admin" }])
+    .select(); // ✅ Fetch inserted data for confirmation
+
+  if (error) {
+    console.error("Admin Signup Error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+
+  console.log("Admin Created:", data);
+
+  // ✅ Generate JWT token for immediate admin access
+  const token = jwt.sign({ email, role: "admin" }, process.env.JWT_SECRET, {
+    expiresIn: "2h",
+  });
+
+  res.status(201).json({
+    message: "Admin account created successfully!",
+    token,
+  });
 });
 
 export default router;

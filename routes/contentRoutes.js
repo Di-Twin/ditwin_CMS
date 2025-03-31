@@ -1,6 +1,6 @@
 import express from "express";
 import supabase from "../config/supabase.js";
-import {authMiddleware} from "../middleware/authMiddleware.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
@@ -35,33 +35,50 @@ router.get("/:section", async (req, res) => {
  * @route PUT /api/content/:section
  * @desc Update a section (Admin only)
  */
-router.put("/:section", authMiddleware, roleMiddleware(["admin"]), async (req, res) => {
-  const { section } = req.params;
-  const { content } = req.body;
+router.put(
+  "/:section",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  async (req, res) => {
+    const { section } = req.params;
+    const { content } = req.body;
 
-  const { data, error } = await supabase
-    .from("website_content")
-    .update({ content })
-    .eq("section", section)
-    .select();
+    const { data, error } = await supabase
+      .from("website_content")
+      .update({ content })
+      .eq("section", section)
+      .select();
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ message: `${section} updated successfully!`, data });
-});
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ message: `${section} updated successfully!`, data });
+  }
+);
 
 /**
  * @route POST /api/content
  * @desc Add new section (Admin only)
  */
-router.post("/", authMiddleware, roleMiddleware(["admin"]), async (req, res) => {
-  const { section, content } = req.body;
+router.post(
+  "/",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  async (req, res) => {
+    const { section, content } = req.body;
 
-  const { data, error } = await supabase
-    .from("website_content")
-    .insert([{ section, content }]);
+    console.log("Received Data:", req.body); // Debugging log
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ message: `${section} added successfully!`, data });
-});
+    if (!section) {
+      return res.status(400).json({ error: "Section field is required" });
+    }
+
+    const { data, error } = await supabase
+      .from("website_content")
+      .insert([{ section, content }]);
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    res.json({ message: `${section} added successfully!`, data });
+  }
+);
 
 export default router;

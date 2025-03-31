@@ -5,6 +5,7 @@ import supabase from "./config/supabase.js";
 import authRoutes from "./routes/auth.js";
 import contentRoutes from './routes/contentRoutes.js'
 import blogRoutes from './routes/blogRoutes.js'
+import imageRoutes from './routes/imageRoutes.js'
 
 dotenv.config();
 
@@ -29,8 +30,8 @@ app.get("/", async (req, res) => {
 
 app.use("/auth", authRoutes); // Authentication Routes
 app.use("/api/content", contentRoutes); // Website Content
-app.use("/api/blogs", blogRoutes); // Website Content
-
+app.use("/api/blog", blogRoutes); // Website Content
+app.use("/api", imageRoutes); // Website Content
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
