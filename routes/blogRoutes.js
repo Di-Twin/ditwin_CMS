@@ -48,19 +48,19 @@ router.post(
     const { image, image_alt, main_tag, date, heading, content, tags } =
       req.body;
     const share_links = {
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=yourwebsite.com/blog/${heading.replace(
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=dtwin.evenbetter.in/blog/${heading.replace(
         / /g,
         "-"
       )}`,
-      twitter: `https://twitter.com/intent/tweet?url=yourwebsite.com/blog/${heading.replace(
+      twitter: `https://twitter.com/intent/tweet?url=dtwin.evenbetter.in/blog/${heading.replace(
         / /g,
         "-"
       )}`,
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=yourwebsite.com/blog/${heading.replace(
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=dtwin.evenbetter.in/blog/${heading.replace(
         / /g,
         "-"
       )}`,
-      instagram: `https://www.instagram.com/yourwebsite.com/blog/${heading.replace(
+      instagram: `https://www.instagram.com/dtwin.evenbetter.in/blog/${heading.replace(
         / /g,
         "-"
       )}`,
